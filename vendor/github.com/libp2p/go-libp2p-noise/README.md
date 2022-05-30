@@ -1,3 +1,7 @@
+# DEPRECATION NOTICE
+
+This package has moved into go-libp2p as a sub-package, github.com/libp2p/go-libp2p/p2p/security/noise.
+
 # go-libp2p-noise
 
 [![](https://img.shields.io/badge/made%20by-ETHBerlinZwei-blue.svg?style=flat-square)](https://ethberlinzwei.com)
@@ -44,11 +48,10 @@ go get github.com/libp2p/go-libp2p-noise
 
 ## Usage
 
-`go-libp2p-noise` is not currently enabled by default when constructing a new libp2p
-[Host][godoc-host], so you will need to explicitly enable it in order to use it.
+`go-libp2p-noise` is enabled by default when constructing a new libp2p [Host][godoc-host].
 
-To do so, you can pass `noise.New` as an argument to a `libp2p.Security` `Option` when
-constructing a libp2p `Host` with `libp2p.New`:
+On a blank host, you can pass `noise.New` as an argument to a `libp2p.Security` `Option`
+when constructing a libp2p `Host` with `libp2p.New`:
 
 ```go
 import (
