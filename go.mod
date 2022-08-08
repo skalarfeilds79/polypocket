@@ -26,7 +26,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.5.0
 	github.com/multiformats/go-multihash v0.1.0 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/prometheus/client_golang v1.12.1
+	github.com/prometheus/client_golang v1.13.0
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.1
@@ -36,7 +36,7 @@ require (
 	github.com/umbracle/go-web3 v0.0.0-20220224145938-aaa1038c1b69
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	google.golang.org/grpc v1.45.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 )
 
@@ -53,7 +53,6 @@ require (
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	go.uber.org/zap v1.20.0 // indirect
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
