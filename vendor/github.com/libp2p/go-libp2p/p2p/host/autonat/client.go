@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	pb "github.com/libp2p/go-libp2p/p2p/host/autonat/pb"
 
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-msgio/protoio"
-
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -31,6 +30,10 @@ type client struct {
 
 // DialBack asks peer p to dial us back on all addresses returned by the addrFunc.
 // It blocks until we've received a response from the peer.
+//
+// Note: A returned error Message_E_DIAL_ERROR does not imply that the server
+// actually performed a dial attempt. Servers that run a version < v0.20.0 also
+// return Message_E_DIAL_ERROR if the dial was skipped due to the dialPolicy.
 func (c *client) DialBack(ctx context.Context, p peer.ID) (ma.Multiaddr, error) {
 	s, err := c.h.NewStream(ctx, p, AutoNATProto)
 	if err != nil {
