@@ -9,26 +9,25 @@ import (
 	"sync"
 	"time"
 
+	"github.com/libp2p/go-libp2p/core/connmgr"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/event"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/libp2p/go-libp2p/core/record"
 	"github.com/libp2p/go-libp2p/p2p/host/autonat"
+	"github.com/libp2p/go-libp2p/p2p/host/eventbus"
 	"github.com/libp2p/go-libp2p/p2p/host/pstoremanager"
 	"github.com/libp2p/go-libp2p/p2p/host/relaysvc"
+	inat "github.com/libp2p/go-libp2p/p2p/net/nat"
 	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	"github.com/libp2p/go-libp2p/p2p/protocol/holepunch"
 	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 
-	"github.com/libp2p/go-libp2p-core/connmgr"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/event"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/peerstore"
-	"github.com/libp2p/go-libp2p-core/protocol"
-	"github.com/libp2p/go-libp2p-core/record"
-
-	"github.com/libp2p/go-eventbus"
-	inat "github.com/libp2p/go-libp2p-nat"
 	"github.com/libp2p/go-netroute"
 
 	logging "github.com/ipfs/go-log/v2"
@@ -62,9 +61,9 @@ type AddrsFactory func([]ma.Multiaddr) []ma.Multiaddr
 
 // BasicHost is the basic implementation of the host.Host interface. This
 // particular host implementation:
-//  * uses a protocol muxer to mux per-protocol streams
-//  * uses an identity service to send + receive node information
-//  * uses a nat service to establish NAT port mappings
+//   - uses a protocol muxer to mux per-protocol streams
+//   - uses an identity service to send + receive node information
+//   - uses a nat service to establish NAT port mappings
 type BasicHost struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
@@ -376,7 +375,7 @@ func (h *BasicHost) newStreamHandler(s network.Stream) {
 		}
 	}
 
-	lzc, protoID, handle, err := h.Mux().NegotiateLazy(s)
+	protoID, handle, err := h.Mux().Negotiate(s)
 	took := time.Since(before)
 	if err != nil {
 		if err == io.EOF {
@@ -390,11 +389,6 @@ func (h *BasicHost) newStreamHandler(s network.Stream) {
 		}
 		s.Reset()
 		return
-	}
-
-	s = &streamWrapper{
-		Stream: s,
-		rw:     lzc,
 	}
 
 	if h.negtimeout > 0 {
@@ -564,7 +558,9 @@ func (h *BasicHost) EventBus() event.Bus {
 
 // SetStreamHandler sets the protocol handler on the Host's Mux.
 // This is equivalent to:
-//   host.Mux().SetHandler(proto, handler)
+//
+//	host.Mux().SetHandler(proto, handler)
+//
 // (Threadsafe)
 func (h *BasicHost) SetStreamHandler(pid protocol.ID, handler network.StreamHandler) {
 	h.Mux().AddHandler(string(pid), func(p string, rwc io.ReadWriteCloser) error {
@@ -605,6 +601,17 @@ func (h *BasicHost) RemoveStreamHandler(pid protocol.ID) {
 // to create one. If ProtocolID is "", writes no header.
 // (Threadsafe)
 func (h *BasicHost) NewStream(ctx context.Context, p peer.ID, pids ...protocol.ID) (network.Stream, error) {
+	// Ensure we have a connection, with peer addresses resolved by the routing system (#207)
+	// It is not sufficient to let the underlying host connect, it will most likely not have
+	// any addresses for the peer without any prior connections.
+	// If the caller wants to prevent the host from dialing, it should use the NoDial option.
+	if nodial, _ := network.GetNoDial(ctx); !nodial {
+		err := h.Connect(ctx, peer.AddrInfo{ID: p})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	s, err := h.Network().NewStream(ctx, p)
 	if err != nil {
 		return nil, err
@@ -1054,6 +1061,10 @@ func (h *BasicHost) Close() error {
 		}
 
 		h.refCount.Wait()
+
+		if h.Network().ResourceManager() != nil {
+			h.Network().ResourceManager().Close()
+		}
 	})
 
 	return nil
