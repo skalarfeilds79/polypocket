@@ -4,29 +4,27 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"runtime/debug"
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/event"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/peerstore"
-	"github.com/libp2p/go-libp2p-core/record"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/event"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/libp2p/go-libp2p/core/record"
 
-	"github.com/libp2p/go-eventbus"
-	"github.com/libp2p/go-msgio/protoio"
-
+	"github.com/libp2p/go-libp2p/p2p/host/eventbus"
 	pb "github.com/libp2p/go-libp2p/p2p/protocol/identify/pb"
 
-	ma "github.com/multiformats/go-multiaddr"
-	manet "github.com/multiformats/go-multiaddr/net"
-	msmux "github.com/multiformats/go-multistream"
+	"github.com/libp2p/go-msgio/protoio"
 
 	"github.com/gogo/protobuf/proto"
 	logging "github.com/ipfs/go-log/v2"
+	ma "github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr/net"
+	msmux "github.com/multiformats/go-multistream"
 )
 
 var log = logging.Logger("net/identify")
@@ -54,19 +52,6 @@ var (
 	maxMessages      = 10
 	defaultUserAgent = "github.com/libp2p/go-libp2p"
 )
-
-func init() {
-	bi, ok := debug.ReadBuildInfo()
-	if !ok {
-		return
-	}
-	version := bi.Main.Version
-	if version == "(devel)" {
-		defaultUserAgent = bi.Main.Path
-	} else {
-		defaultUserAgent = fmt.Sprintf("%s@%s", bi.Main.Path, bi.Main.Version)
-	}
-}
 
 type addPeerHandlerReq struct {
 	rp   peer.ID
@@ -100,9 +85,9 @@ type IDService interface {
 // useful information about the local peer. A sort of hello.
 //
 // The idService sends:
-//  * Our IPFS Protocol Version
-//  * Our IPFS Agent Version
-//  * Our public Listen Addresses
+//   - Our IPFS Protocol Version
+//   - Our IPFS Agent Version
+//   - Our public Listen Addresses
 type idService struct {
 	Host      host.Host
 	UserAgent string
@@ -341,6 +326,7 @@ func (ids *idService) IdentifyWait(c network.Conn) <-chan struct{} {
 		go func() {
 			defer close(wait)
 			if err := ids.identifyConn(c); err != nil {
+				log.Warnf("failed to identify %s: %s", c.RemotePeer(), err)
 				ids.emitters.evtPeerIdentificationFailed.Emit(event.EvtPeerIdentificationFailed{Peer: c.RemotePeer(), Reason: err})
 				return
 			}
@@ -776,15 +762,6 @@ func (ids *idService) consumeObservedAddress(observed []byte, c network.Conn) {
 	ids.observedAddrs.Record(c, maddr)
 }
 
-func addrInAddrs(a ma.Multiaddr, as []ma.Multiaddr) bool {
-	for _, b := range as {
-		if a.Equal(b) {
-			return true
-		}
-	}
-	return false
-}
-
 func signedPeerRecordFromMessage(msg *pb.Identify) (*record.Envelope, error) {
 	if msg.SignedPeerRecord == nil || len(msg.SignedPeerRecord) == 0 {
 		return nil, nil
@@ -828,7 +805,5 @@ func (nn *netNotifiee) Disconnected(n network.Network, v network.Conn) {
 	}
 }
 
-func (nn *netNotifiee) OpenedStream(n network.Network, v network.Stream) {}
-func (nn *netNotifiee) ClosedStream(n network.Network, v network.Stream) {}
-func (nn *netNotifiee) Listen(n network.Network, a ma.Multiaddr)         {}
-func (nn *netNotifiee) ListenClose(n network.Network, a ma.Multiaddr)    {}
+func (nn *netNotifiee) Listen(n network.Network, a ma.Multiaddr)      {}
+func (nn *netNotifiee) ListenClose(n network.Network, a ma.Multiaddr) {}
