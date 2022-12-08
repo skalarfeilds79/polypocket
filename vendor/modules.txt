@@ -250,7 +250,7 @@ github.com/libp2p/go-conn-security-multistream
 github.com/libp2p/go-eventbus
 # github.com/libp2p/go-flow-metrics v0.0.3
 github.com/libp2p/go-flow-metrics
-# github.com/libp2p/go-libp2p v0.18.0-rc2
+# github.com/libp2p/go-libp2p v0.18.0
 ## explicit
 github.com/libp2p/go-libp2p
 github.com/libp2p/go-libp2p/config
@@ -312,7 +312,7 @@ github.com/libp2p/go-libp2p-discovery
 github.com/libp2p/go-libp2p-kbucket
 github.com/libp2p/go-libp2p-kbucket/keyspace
 github.com/libp2p/go-libp2p-kbucket/peerdiversity
-# github.com/libp2p/go-libp2p-mplex v0.5.0
+# github.com/libp2p/go-libp2p-mplex v0.6.0
 github.com/libp2p/go-libp2p-mplex
 # github.com/libp2p/go-libp2p-nat v0.1.0
 github.com/libp2p/go-libp2p-nat
@@ -330,19 +330,19 @@ github.com/libp2p/go-libp2p-pnet
 ## explicit
 github.com/libp2p/go-libp2p-pubsub
 github.com/libp2p/go-libp2p-pubsub/pb
-# github.com/libp2p/go-libp2p-quic-transport v0.16.0
+# github.com/libp2p/go-libp2p-quic-transport v0.16.1
 github.com/libp2p/go-libp2p-quic-transport
-# github.com/libp2p/go-libp2p-resource-manager v0.1.2
+# github.com/libp2p/go-libp2p-resource-manager v0.1.5
 github.com/libp2p/go-libp2p-resource-manager
-# github.com/libp2p/go-libp2p-swarm v0.10.1
+# github.com/libp2p/go-libp2p-swarm v0.10.2
 github.com/libp2p/go-libp2p-swarm
 # github.com/libp2p/go-libp2p-tls v0.3.1
 github.com/libp2p/go-libp2p-tls
-# github.com/libp2p/go-libp2p-transport-upgrader v0.7.0
+# github.com/libp2p/go-libp2p-transport-upgrader v0.7.1
 github.com/libp2p/go-libp2p-transport-upgrader
-# github.com/libp2p/go-libp2p-yamux v0.8.1
+# github.com/libp2p/go-libp2p-yamux v0.8.2
 github.com/libp2p/go-libp2p-yamux
-# github.com/libp2p/go-mplex v0.4.0
+# github.com/libp2p/go-mplex v0.6.0
 github.com/libp2p/go-mplex
 # github.com/libp2p/go-msgio v0.1.0
 github.com/libp2p/go-msgio
@@ -360,7 +360,7 @@ github.com/libp2p/go-reuseport
 github.com/libp2p/go-reuseport-transport
 # github.com/libp2p/go-stream-muxer-multistream v0.4.0
 github.com/libp2p/go-stream-muxer-multistream
-# github.com/libp2p/go-tcp-transport v0.5.0
+# github.com/libp2p/go-tcp-transport v0.5.1
 github.com/libp2p/go-tcp-transport
 # github.com/libp2p/go-ws-transport v0.6.0
 github.com/libp2p/go-ws-transport
