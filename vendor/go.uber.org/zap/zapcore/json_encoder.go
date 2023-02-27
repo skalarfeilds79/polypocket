@@ -71,7 +71,9 @@ type jsonEncoder struct {
 //
 // Note that the encoder doesn't deduplicate keys, so it's possible to produce
 // a message like
-//   {"foo":"bar","foo":"baz"}
+//
+//	{"foo":"bar","foo":"baz"}
+//
 // This is permitted by the JSON specification, but not encouraged. Many
 // libraries will ignore duplicate key-value pairs (typically keeping the last
 // pair) when unmarshaling, but users should attempt to avoid adding duplicate
@@ -364,7 +366,7 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	final := enc.clone()
 	final.buf.AppendByte('{')
 
-	if final.LevelKey != "" {
+	if final.LevelKey != "" && final.EncodeLevel != nil {
 		final.addKey(final.LevelKey)
 		cur := final.buf.Len()
 		final.EncodeLevel(ent.Level, final)
