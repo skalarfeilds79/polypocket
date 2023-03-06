@@ -10,7 +10,7 @@
 //
 // A CIDv1 has four parts:
 //
-//     <cidv1> ::= <multibase-prefix><cid-version><multicodec-packed-content-type><multihash-content-address>
+//	<cidv1> ::= <multibase-prefix><cid-version><multicodec-packed-content-type><multihash-content-address>
 //
 // As shown above, the CID implementation relies heavily on Multiformats,
 // particularly Multibase
@@ -22,6 +22,7 @@ package cid
 import (
 	"bytes"
 	"encoding"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -46,19 +47,21 @@ var (
 	ErrInvalidEncoding = errors.New("invalid base encoding")
 )
 
-// These are multicodec-packed content types. The should match
-// the codes described in the authoritative document:
-// https://github.com/multiformats/multicodec/blob/master/table.csv
+// Consts below are DEPRECATED and left only for legacy reasons:
+// <https://github.com/ipfs/go-cid/pull/137>
+// Modern code should use consts from go-multicodec instead:
+// <https://github.com/multiformats/go-multicodec>
 const (
-	Raw = 0x55
+	// common ones
+	Raw         = 0x55
+	DagProtobuf = 0x70   // https://ipld.io/docs/codecs/known/dag-pb/
+	DagCBOR     = 0x71   // https://ipld.io/docs/codecs/known/dag-cbor/
+	DagJSON     = 0x0129 // https://ipld.io/docs/codecs/known/dag-json/
+	Libp2pKey   = 0x72   // https://github.com/libp2p/specs/blob/master/peer-ids/peer-ids.md#peer-ids
 
-	DagProtobuf = 0x70
-	DagCBOR     = 0x71
-	Libp2pKey   = 0x72
-
-	GitRaw = 0x78
-
-	DagJOSE               = 0x85
+	// other
+	GitRaw                = 0x78
+	DagJOSE               = 0x85 // https://ipld.io/specs/codecs/dag-jose/spec/
 	EthBlock              = 0x90
 	EthBlockList          = 0x91
 	EthTxTrie             = 0x92
@@ -79,64 +82,6 @@ const (
 	FilCommitmentUnsealed = 0xf101
 	FilCommitmentSealed   = 0xf102
 )
-
-// Codecs maps the name of a codec to its type
-var Codecs = map[string]uint64{
-	"v0":                      DagProtobuf,
-	"raw":                     Raw,
-	"protobuf":                DagProtobuf,
-	"cbor":                    DagCBOR,
-	"libp2p-key":              Libp2pKey,
-	"git-raw":                 GitRaw,
-	"eth-block":               EthBlock,
-	"eth-block-list":          EthBlockList,
-	"eth-tx-trie":             EthTxTrie,
-	"eth-tx":                  EthTx,
-	"eth-tx-receipt-trie":     EthTxReceiptTrie,
-	"eth-tx-receipt":          EthTxReceipt,
-	"eth-state-trie":          EthStateTrie,
-	"eth-account-snapshot":    EthAccountSnapshot,
-	"eth-storage-trie":        EthStorageTrie,
-	"bitcoin-block":           BitcoinBlock,
-	"bitcoin-tx":              BitcoinTx,
-	"zcash-block":             ZcashBlock,
-	"zcash-tx":                ZcashTx,
-	"decred-block":            DecredBlock,
-	"decred-tx":               DecredTx,
-	"dash-block":              DashBlock,
-	"dash-tx":                 DashTx,
-	"fil-commitment-unsealed": FilCommitmentUnsealed,
-	"fil-commitment-sealed":   FilCommitmentSealed,
-	"dag-jose":                DagJOSE,
-}
-
-// CodecToStr maps the numeric codec to its name
-var CodecToStr = map[uint64]string{
-	Raw:                   "raw",
-	DagProtobuf:           "protobuf",
-	DagCBOR:               "cbor",
-	GitRaw:                "git-raw",
-	EthBlock:              "eth-block",
-	EthBlockList:          "eth-block-list",
-	EthTxTrie:             "eth-tx-trie",
-	EthTx:                 "eth-tx",
-	EthTxReceiptTrie:      "eth-tx-receipt-trie",
-	EthTxReceipt:          "eth-tx-receipt",
-	EthStateTrie:          "eth-state-trie",
-	EthAccountSnapshot:    "eth-account-snapshot",
-	EthStorageTrie:        "eth-storage-trie",
-	BitcoinBlock:          "bitcoin-block",
-	BitcoinTx:             "bitcoin-tx",
-	ZcashBlock:            "zcash-block",
-	ZcashTx:               "zcash-tx",
-	DecredBlock:           "decred-block",
-	DecredTx:              "decred-tx",
-	DashBlock:             "dash-block",
-	DashTx:                "dash-tx",
-	FilCommitmentUnsealed: "fil-commitment-unsealed",
-	FilCommitmentSealed:   "fil-commitment-sealed",
-	DagJOSE:               "dag-jose",
-}
 
 // tryNewCidV0 tries to convert a multihash into a CIDv0 CID and returns an
 // error on failure.
@@ -173,16 +118,24 @@ func NewCidV0(mhash mh.Multihash) Cid {
 // Panics if the multihash is invalid.
 func NewCidV1(codecType uint64, mhash mh.Multihash) Cid {
 	hashlen := len(mhash)
-	// two 8 bytes (max) numbers plus hash
-	buf := make([]byte, 1+varint.UvarintSize(codecType)+hashlen)
-	n := varint.PutUvarint(buf, 1)
-	n += varint.PutUvarint(buf[n:], codecType)
-	cn := copy(buf[n:], mhash)
+
+	// Two 8 bytes (max) numbers plus hash.
+	// We use strings.Builder to only allocate once.
+	var b strings.Builder
+	b.Grow(1 + varint.UvarintSize(codecType) + hashlen)
+
+	b.WriteByte(1)
+
+	var buf [binary.MaxVarintLen64]byte
+	n := varint.PutUvarint(buf[:], codecType)
+	b.Write(buf[:n])
+
+	cn, _ := b.Write(mhash)
 	if cn != hashlen {
 		panic("copy hash length is inconsistent")
 	}
 
-	return Cid{string(buf[:n+hashlen])}
+	return Cid{b.String()}
 }
 
 var (
@@ -228,10 +181,19 @@ func Parse(v interface{}) (Cid, error) {
 	}
 }
 
+// MustParse calls Parse but will panic on error.
+func MustParse(v interface{}) Cid {
+	c, err := Parse(v)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
 // Decode parses a Cid-encoded string and returns a Cid object.
 // For CidV1, a Cid-encoded string is primarily a multibase string:
 //
-//     <multibase-type-code><base-encoded-string>
+//	<multibase-type-code><base-encoded-string>
 //
 // The base-encoded string represents a:
 //
@@ -287,7 +249,7 @@ func ExtractEncoding(v string) (mbase.Encoding, error) {
 // Cast takes a Cid data slice, parses it and returns a Cid.
 // For CidV1, the data buffer is in the form:
 //
-//     <version><codec-type><multihash>
+//	<version><codec-type><multihash>
 //
 // CidV0 are also supported. In particular, data buffers starting
 // with length 34 bytes, which starts with bytes [18,32...] are considered
@@ -416,7 +378,13 @@ func (c Cid) Hash() mh.Multihash {
 // Bytes returns the byte representation of a Cid.
 // The output of bytes can be parsed back into a Cid
 // with Cast().
+//
+// If c.Defined() == false, it return a nil slice and may not
+// be parsable with Cast().
 func (c Cid) Bytes() []byte {
+	if !c.Defined() {
+		return nil
+	}
 	return []byte(c.str)
 }
 
@@ -497,7 +465,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 
 // MarshalJSON procudes a JSON representation of a Cid, which looks as follows:
 //
-//    { "/": "<cid-string>" }
+//	{ "/": "<cid-string>" }
 //
 // Note that this formatting comes from the IPLD specification
 // (https://github.com/ipld/specs/tree/master/ipld)
@@ -554,7 +522,8 @@ func (c Cid) Prefix() Prefix {
 // and the Multihash length. It does not contains
 // any actual content information.
 // NOTE: The use -1 in MhLength to mean default length is deprecated,
-//   use the V0Builder or V1Builder structures instead
+//
+//	use the V0Builder or V1Builder structures instead
 type Prefix struct {
 	Version  uint64
 	Codec    uint64
@@ -593,7 +562,7 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 
 // Bytes returns a byte representation of a Prefix. It looks like:
 //
-//     <version><codec><mh-type><mh-length>
+//	<version><codec><mh-type><mh-length>
 func (p Prefix) Bytes() []byte {
 	size := varint.UvarintSize(p.Version)
 	size += varint.UvarintSize(p.Codec)
