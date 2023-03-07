@@ -34,7 +34,7 @@ require (
 	github.com/umbracle/fastrlp v0.0.0-20211229195328-c1416904ae17
 	github.com/umbracle/go-eth-bn256 v0.0.0-20190607160430-b36caf4e0f6b
 	github.com/umbracle/go-web3 v0.0.0-20220224145938-aaa1038c1b69
-	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
+	golang.org/x/crypto v0.1.0
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
@@ -53,8 +53,6 @@ require (
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	go.uber.org/zap v1.20.0 // indirect
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
-	golang.org/x/tools v0.1.9 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
